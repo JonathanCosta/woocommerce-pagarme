@@ -65,7 +65,7 @@
 				return true;
 			}
 
-			if ( ! $( '#payment_method_pagarme-credit-card' ).is( ':checked' ) ) {
+			if ( ! $( '#payment_method_pagarme-credit-card' ).is( ':checked' ) || ! $( '#payment_method_pagarme-subscription-credit-card' ).is( ':checked' ) ) {
 				return true;
 			}
 

@@ -177,16 +177,27 @@ class WC_Pagarme_API {
 			$this->gateway->log->add( $this->gateway->id, 'Getting the order installments...' );
 		}
 
-		$response = $this->do_request( 'transactions/calculate_installments_amount', 'GET', $data );
+		if( 'pagarme-subscription-credit-card' === $this->gateway->id ) {
+			$pagarme_amount = $amount * 100;
 
-		if ( is_wp_error( $response ) ) {
-			if ( 'yes' === $this->gateway->debug ) {
-				$this->gateway->log->add( $this->gateway->id, 'WP_Error in getting the installments: ' . $response->get_error_message() );
+			$installments = [];
+
+			for ($i = 1; $i <= $this->gateway->max_installment; $i++) {
+				$installment = [
+					$i => [
+						'installment'=> $i,
+						'amount'=> $pagarme_amount,
+						'installment_amount'=> ceil($pagarme_amount / $i),
+					]
+				];
+				array_push($installments, $installment[$i]);
 			}
 
-			return array();
-		} else {
-			$_installments = json_decode( $response['body'], true );
+			$installments = array_combine(range(1, count($installments)), $installments);
+
+			$_installments = [
+				'installments' => $installments,
+			];
 
 			if ( isset( $_installments['installments'] ) ) {
 				$installments = $_installments['installments'];
@@ -198,6 +209,30 @@ class WC_Pagarme_API {
 				set_transient( $transient_id, $installments, MINUTE_IN_SECONDS * 5 );
 
 				return $installments;
+			}
+		} else {
+			$response = $this->do_request( 'transactions/calculate_installments_amount', 'GET', $data );
+
+			if ( is_wp_error( $response ) ) {
+				if ( 'yes' === $this->gateway->debug ) {
+					$this->gateway->log->add( $this->gateway->id, 'WP_Error in getting the installments: ' . $response->get_error_message() );
+				}
+
+				return array();
+			} else {
+				$_installments = json_decode( $response['body'], true );
+
+				if ( isset( $_installments['installments'] ) ) {
+					$installments = $_installments['installments'];
+
+					if ( 'yes' === $this->gateway->debug ) {
+						$this->gateway->log->add( $this->gateway->id, 'Installments generated successfully: ' . print_r( $_installments, true ) );
+					}
+
+					set_transient( $transient_id, $installments, MINUTE_IN_SECONDS * 5 );
+
+					return $installments;
+				}
 			}
 		}
 
@@ -316,7 +351,7 @@ class WC_Pagarme_API {
 			$data['customer']['born_at'] = $birthdate[1] . '-' . $birthdate[0] . '-' . $birthdate[2];
 		}
 
-		if ( 'pagarme-credit-card' === $this->gateway->id ) {
+		if ( 'pagarme-credit-card' === $this->gateway->id || 'pagarme-subscription-credit-card' === $this->gateway->id ) {
 			if ( isset( $posted['pagarme_card_hash'] ) ) {
 				$data['payment_method'] = 'credit_card';
 				$data['card_hash']      = $posted['pagarme_card_hash'];
@@ -338,7 +373,7 @@ class WC_Pagarme_API {
 					}
 				}
 			}
-		} elseif ( 'pagarme-banking-ticket' === $this->gateway->id ) {
+		} elseif ( 'pagarme-banking-ticket' === $this->gateway->id || 'pagarme-subscription-banking-ticket' === $this->gateway->id ) {
 			$data['payment_method'] = 'boleto';
 			$data['async']          = 'yes' === $this->gateway->async;
 		}
@@ -346,6 +381,143 @@ class WC_Pagarme_API {
 		// Add filter for Third Party plugins.
 		return apply_filters( 'wc_pagarme_transaction_data', $data , $order );
 	}
+
+/**
+	 * Generate the plan data.
+	 *
+	 * @param  WC_Order $order  Order data.
+	 * @param  array    $posted Form posted data.
+	 *
+	 * @return array            Plan data.
+	 */
+	public function generate_plan_data( $order, $posted ) {
+		// Set the request data.
+		$data = array(
+			'api_key'      => $this->gateway->api_key,
+			'amount'       => $order->get_total() * 100,
+			'days'         => '30',
+			'name'         => $order->get_order_key(),
+			'charges'      => $posted['pagarme_installments'],
+		);
+
+		if ( 'pagarme-subscription-credit-card' === $this->gateway->id ) {
+			$data['payment_method'] = array('credit_card');			
+		} elseif ( 'pagarme-subscription-banking-ticket' === $this->gateway->id ) {
+			$data['payment_method'] = array('boleto');
+			$data['async']          = 'yes' === $this->gateway->async;
+		}
+
+		// Add filter for Third Party plugins.
+		return apply_filters( 'wc_pagarme_plan_data', $data , $order );
+	}
+
+	/**
+	 * Generate the subscription data.
+	 *
+	 * @param  WC_Order $order  Order data.
+	 * @param  array    $posted Form posted data.
+	 *
+	 * @return array            Subscription data.
+	 */
+	public function generate_subscription_data( $order, $posted ) {
+		$plan_data = $this->generate_plan_data( $order, $posted );
+		$plan = $this->create_a_plan( $order, $plan_data );
+		
+		// Set the request data.
+		$data = array(
+			'api_key'      => $this->gateway->api_key,
+			'plan_id'      => $plan['id'],
+			'postback_url' => WC()->api_request_url( get_class( $this->gateway ) ),
+			'customer'     => array(
+				'name'  => trim( $order->billing_first_name . ' ' . $order->billing_last_name ),
+				'email' => $order->billing_email,
+			),
+			'metadata'     => array(
+				'order_number' => $order->get_order_number(),
+			),
+		);
+
+		// Phone.
+		if ( ! empty( $order->billing_phone ) ) {
+			$phone = $this->only_numbers( $order->billing_phone );
+
+			$data['customer']['phone'] = array(
+				'ddd'    => substr( $phone, 0, 2 ),
+				'number' => substr( $phone, 2 ),
+			);
+		}
+
+		// Address.
+		if ( ! empty( $order->billing_address_1 ) ) {
+			$data['customer']['address'] = array(
+				'street'        => $order->billing_address_1,
+				'complementary' => $order->billing_address_2,
+				'zipcode'       => $this->only_numbers( $order->billing_postcode ),
+			);
+
+			// Non-WooCommerce default address fields.
+			if ( ! empty( $order->billing_number ) ) {
+				$data['customer']['address']['street_number'] = $order->billing_number;
+			}
+			if ( ! empty( $order->billing_neighborhood ) ) {
+				$data['customer']['address']['neighborhood'] = $order->billing_neighborhood;
+			}
+		}
+
+		// Set the document number.
+		if ( class_exists( 'Extra_Checkout_Fields_For_Brazil' ) ) {
+			$wcbcf_settings = get_option( 'wcbcf_settings' );
+			if ( '0' !== $wcbcf_settings['person_type'] ) {
+				if ( ( '1' === $wcbcf_settings['person_type'] && '1' === $order->billing_persontype ) || '2' === $wcbcf_settings['person_type'] ) {
+					$data['customer']['document_number'] = $this->only_numbers( $order->billing_cpf );
+				}
+
+				if ( ( '1' === $wcbcf_settings['person_type'] && '2' === $order->billing_persontype ) || '3' === $wcbcf_settings['person_type'] ) {
+					$data['customer']['name']            = $order->billing_company;
+					$data['customer']['document_number'] = $this->only_numbers( $order->billing_cnpj );
+				}
+			}
+		} else {
+			if ( ! empty( $order->billing_cpf ) ) {
+				$data['customer']['document_number'] = $this->only_numbers( $order->billing_cpf );
+			}
+			if ( ! empty( $order->billing_cnpj ) ) {
+				$data['customer']['name']            = $order->billing_company;
+				$data['customer']['document_number'] = $this->only_numbers( $order->billing_cnpj );
+			}
+		}
+
+		if ( 'pagarme-subscription-credit-card' === $this->gateway->id ) {
+			if ( isset( $posted['pagarme_card_hash'] ) ) {
+				$data['payment_method'] = 'credit_card';
+				$data['card_hash']      = $posted['pagarme_card_hash'];
+			}
+
+			// Validate the installments.
+			if ( apply_filters( 'wc_pagarme_allow_credit_card_installments_validation', isset( $posted['pagarme_installments'] ), $order ) ) {
+				$_installment = $posted['pagarme_installments'];
+
+				$data['installments'] = $_installment;
+				// Get installments data.
+				$installments = $this->get_installments( $order->get_total() );
+				if ( isset( $installments[ $_installment ] ) ) {
+					$installment          = $installments[ $_installment ];
+					$smallest_installment = $this->get_smallest_installment();
+
+					if ( $installment['installment'] <= $this->gateway->max_installment && $smallest_installment <= $installment['installment_amount'] ) {
+						$data['amount'] = $installment['amount'];
+					}
+				}
+			}
+		} elseif ( 'pagarme-subscription-banking-ticket' === $this->gateway->id ) {
+			$data['payment_method'] = 'boleto';
+			$data['async']          = 'yes' === $this->gateway->async;
+		}
+
+		// Add filter for Third Party plugins.
+		return apply_filters( 'wc_pagarme_subscription_data', $data , $order );
+	}
+
 
 	/**
 	 * Get customer data from checkout pay page.
@@ -536,6 +708,90 @@ class WC_Pagarme_API {
 	}
 
 	/**
+	 * Do the subscription.
+	 *
+	 * @param  WC_Order $order Order data.
+	 * @param  array    $args  Transaction args.
+	 *
+	 * @return array           Response data.
+	 */
+	public function do_subscription( $order, $args ) {
+		if ( 'yes' === $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Doing a subscription for order ' . $order->get_order_number() . '...' );
+		}
+
+		$endpoint = 'subscriptions';		
+
+		$response = $this->do_request( $endpoint, 'POST', $args );
+
+		if ( is_wp_error( $response ) ) {
+			if ( 'yes' === $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'WP_Error in doing the subscription: ' . $response->get_error_message() );
+			}
+
+			return array();
+		} else {
+			$data = json_decode( $response['body'], true );
+
+			if ( isset( $data['errors'] ) ) {
+				if ( 'yes' === $this->gateway->debug ) {
+					$this->gateway->log->add( $this->gateway->id, 'Failed to make the subscription: ' . print_r( $response, true ) );
+				}
+
+				return $data;
+			}
+
+			if ( 'yes' === $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'Subscription completed successfully! The subscription response is: ' . print_r( $data, true ) );
+			}
+
+			return $data;
+		}
+	}
+
+	/**
+	 * Create a plan.
+	 *
+	 * @param  WC_Order $order Order data.
+	 * @param  array    $args  Create a plan args.
+	 *
+	 * @return array           Response data.
+	 */
+	public function create_a_plan( $order, $args ) {
+		if ( 'yes' === $this->gateway->debug ) {
+			$this->gateway->log->add( $this->gateway->id, 'Creating a plan for order ' . $order->get_order_number() . '...' );
+		}
+
+		$endpoint = 'plans';		
+
+		$response = $this->do_request( $endpoint, 'POST', $args );
+
+		if ( is_wp_error( $response ) ) {
+			if ( 'yes' === $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'WP_Error creating a plan: ' . $response->get_error_message() );
+			}
+
+			return array();
+		} else {
+			$data = json_decode( $response['body'], true );
+
+			if ( isset( $data['errors'] ) ) {
+				if ( 'yes' === $this->gateway->debug ) {
+					$this->gateway->log->add( $this->gateway->id, 'Failed to create a plan: ' . print_r( $response, true ) );
+				}
+
+				return $data;
+			}
+
+			if ( 'yes' === $this->gateway->debug ) {
+				$this->gateway->log->add( $this->gateway->id, 'Plan created! The creation response is: ' . print_r( $data, true ) );
+			}
+
+			return $data;
+		}
+	}
+
+	/**
 	 * Do the transaction.
 	 *
 	 * @param  WC_Order $order Order data.
@@ -685,8 +941,13 @@ class WC_Pagarme_API {
 				$transaction = array( 'errors' => array( array( 'message' => __( 'Missing credit card data, please review your data and try again or contact us for assistance.', 'woocommerce-pagarme' ) ) ) );
 			}
 		} else {
-			$data        = $this->generate_transaction_data( $order, $_POST );
-			$transaction = $this->do_transaction( $order, $data );
+			if ( 'pagarme-subscription-credit-card' === $this->gateway->id ) {
+				$data = $this->generate_subscription_data( $order, $_POST );
+				$transaction = $this->do_subscription( $order, $data);
+			} else {
+				$data = $this->generate_transaction_data( $order, $_POST );
+				$transaction = $this->do_transaction( $order, $data );
+			}
 		}
 
 		if ( isset( $transaction['errors'] ) ) {

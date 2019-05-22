@@ -8,7 +8,7 @@
 		 * Process the credit card data when submit the checkout form.
 		 */
 		$( 'body' ).on( 'click', '#place_order', function() {
-			if ( ! $( '#payment_method_pagarme-credit-card' ).is( ':checked' ) ) {
+			if ( ! $( '#payment_method_pagarme-credit-card' ).is( ':checked' ) || ! $( '#payment_method_pagarme-subscription-credit-card' ).is( ':checked' ) ) {
 				return true;
 			}
 
