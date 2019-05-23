@@ -85,7 +85,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 			'enabled' => array(
 				'title'   => __( 'Enable/Disable', 'woocommerce-pagarme' ),
 				'type'    => 'checkbox',
-				'label'   => __( 'Enable Pagar.me Subscription', 'woocommerce-pagarme' ),
+				'label'   => __( 'Enable Pagar.me Subscription Credit Card', 'woocommerce-pagarme' ),
 				'default' => 'no',
 			),
 			'title' => array(
@@ -93,14 +93,14 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 				'type'        => 'text',
 				'description' => __( 'This controls the title which the user sees during checkout.', 'woocommerce-pagarme' ),
 				'desc_tip'    => true,
-				'default'     => __( 'Subscription', 'woocommerce-pagarme' ),
+				'default'     => __( 'Subscription Credit Card', 'woocommerce-pagarme' ),
 			),
 			'description' => array(
 				'title'       => __( 'Description', 'woocommerce-pagarme' ),
 				'type'        => 'textarea',
 				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce-pagarme' ),
 				'desc_tip'    => true,
-				'default'     => __( 'Pay with Subscription', 'woocommerce-pagarme' ),
+				'default'     => __( 'Pay with Subscription Credit Card', 'woocommerce-pagarme' ),
 			),
 			'integration' => array(
 				'title'       => __( 'Integration Settings', 'woocommerce-pagarme' ),
@@ -284,7 +284,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 			$installments = $this->api->get_installments( $cart_total );
 
 			wc_get_template(
-				'credit-card/payment-form.php',
+				'subscription-credit-card/payment-form.php',
 				array(
 					'cart_total'           => $cart_total,
 					'max_installment'      => $this->max_installment,
@@ -324,7 +324,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 
 		if ( isset( $data['installments'] ) && in_array( $order->get_status(), array( 'processing', 'on-hold' ), true ) ) {
 			wc_get_template(
-				'credit-card/payment-instructions.php',
+				'subscription-credit-card/payment-instructions.php',
 				array(
 					'card_brand'   => $data['card_brand'],
 					'installments' => $data['installments'],
@@ -355,7 +355,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 			$email_type = $plain_text ? 'plain' : 'html';
 
 			wc_get_template(
-				'credit-card/emails/' . $email_type . '-instructions.php',
+				'subscription-credit-card/emails/' . $email_type . '-instructions.php',
 				array(
 					'card_brand'   => $data['card_brand'],
 					'installments' => $data['installments'],

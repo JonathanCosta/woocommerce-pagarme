@@ -1,6 +1,6 @@
 <?php
 /**
- * Pagar.me Banking Ticket gateway
+ * Pagar.me Subscription Banking Ticket gateway
  *
  * @package WooCommerce_Pagarme/Gateway
  */
@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * WC_Pagarme_Banking_Ticket_Gateway class.
+ * WC_Pagarme_Subscription_Banking_Ticket_Gateway class.
  *
  * @extends WC_Payment_Gateway
  */
@@ -34,12 +34,16 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 		$this->init_settings();
 
 		// Define user set variables.
-		$this->title          = $this->get_option( 'title' );
-		$this->description    = $this->get_option( 'description' );
-		$this->api_key        = $this->get_option( 'api_key' );
-		$this->encryption_key = $this->get_option( 'encryption_key' );
-		$this->debug          = $this->get_option( 'debug' );
-		$this->async          = $this->get_option( 'async' );
+		$this->title                = $this->get_option( 'title' );
+		$this->description          = $this->get_option( 'description' );
+		$this->api_key              = $this->get_option( 'api_key' );
+		$this->encryption_key       = $this->get_option( 'encryption_key' );
+		$this->max_installment      = $this->get_option( 'max_installment' );
+		$this->smallest_installment = $this->get_option( 'smallest_installment' );
+		$this->interest_rate        = $this->get_option( 'interest_rate', '0' );
+		$this->free_installments    = $this->get_option( 'free_installments', '1' );
+		$this->debug                = $this->get_option( 'debug' );
+		$this->async                = $this->get_option( 'async' );
 
 		// Active logs.
 		if ( 'yes' === $this->debug ) {
@@ -80,7 +84,7 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 			'enabled' => array(
 				'title'   => __( 'Enable/Disable', 'woocommerce-pagarme' ),
 				'type'    => 'checkbox',
-				'label'   => __( 'Enable Pagar.me Banking Ticket', 'woocommerce-pagarme' ),
+				'label'   => __( 'Enable Pagar.me Subscription Banking Ticket', 'woocommerce-pagarme' ),
 				'default' => 'no',
 			),
 			'title' => array(
@@ -88,14 +92,14 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 				'type'        => 'text',
 				'description' => __( 'This controls the title which the user sees during checkout.', 'woocommerce-pagarme' ),
 				'desc_tip'    => true,
-				'default'     => __( 'Banking Ticket', 'woocommerce-pagarme' ),
+				'default'     => __( 'Subscription Banking Ticket', 'woocommerce-pagarme' ),
 			),
 			'description' => array(
 				'title'       => __( 'Description', 'woocommerce-pagarme' ),
 				'type'        => 'textarea',
 				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce-pagarme' ),
 				'desc_tip'    => true,
-				'default'     => __( 'Pay with Banking Ticket', 'woocommerce-pagarme' ),
+				'default'     => __( 'Pay with Subscription Banking Ticket', 'woocommerce-pagarme' ),
 			),
 			'integration' => array(
 				'title'       => __( 'Integration Settings', 'woocommerce-pagarme' ),
@@ -126,6 +130,82 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 				'description' => sprintf( __( 'If enabled the banking ticket url will appear in the order page, if disabled it will appear after the checkout process.', 'woocommerce-pagarme' ) ),
 				'default'     => 'no',
 			),
+			'installments' => array(
+				'title'       => __( 'Installments', 'woocommerce-pagarme' ),
+				'type'        => 'title',
+				'description' => '',
+			),
+			'max_installment' => array(
+				'title'       => __( 'Number of Installment', 'woocommerce-pagarme' ),
+				'type'        => 'select',
+				'class'       => 'wc-enhanced-select',
+				'default'     => '18',
+				'description' => __( 'Maximum number of installments possible with payments by credit card.', 'woocommerce-pagarme' ),
+				'desc_tip'    => true,
+				'options'     => array(
+					'1'  => '1',
+					'2'  => '2',
+					'3'  => '3',
+					'4'  => '4',
+					'5'  => '5',
+					'6'  => '6',
+					'7'  => '7',
+					'8'  => '8',
+					'9'  => '9',
+					'10' => '10',
+					'11' => '11',
+					'12' => '12',
+					'13' => '13',
+					'14' => '14',
+					'15' => '15',
+					'16' => '16',
+					'17' => '17',
+					'18' => '18',
+				),
+			),
+			'smallest_installment' => array(
+				'title'       => __( 'Smallest Installment', 'woocommerce-pagarme' ),
+				'type'        => 'text',
+				'description' => __( 'Please enter with the value of smallest installment, Note: it not can be less than 5.', 'woocommerce-pagarme' ),
+				'desc_tip'    => true,
+				'default'     => '5',
+			),
+			'interest_rate' => array(
+				'title'       => __( 'Interest rate', 'woocommerce-pagarme' ),
+				'type'        => 'text',
+				'description' => __( 'Please enter with the interest rate amount. Note: use 0 to not charge interest.', 'woocommerce-pagarme' ),
+				'desc_tip'    => true,
+				'default'     => '0',
+			),
+			'free_installments' => array(
+				'title'       => __( 'Free Installments', 'woocommerce-pagarme' ),
+				'type'        => 'select',
+				'class'       => 'wc-enhanced-select',
+				'default'     => '1',
+				'description' => __( 'Number of installments with interest free.', 'woocommerce-pagarme' ),
+				'desc_tip'    => true,
+				'options'     => array(
+					'0'  => _x( 'None', 'no free installments', 'woocommerce-pagarme' ),
+					'1'  => '1',
+					'2'  => '2',
+					'3'  => '3',
+					'4'  => '4',
+					'5'  => '5',
+					'6'  => '6',
+					'7'  => '7',
+					'8'  => '8',
+					'9'  => '9',
+					'10' => '10',
+					'11' => '11',
+					'12' => '12',
+					'13' => '13',
+					'14' => '14',
+					'15' => '15',
+					'16' => '16',
+					'17' => '17',
+					'18' => '18',
+				),
+			),
 			'testing' => array(
 				'title'       => __( 'Gateway Testing', 'woocommerce-pagarme' ),
 				'type'        => 'title',
@@ -149,9 +229,18 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 			echo wp_kses_post( wpautop( wptexturize( $description ) ) );
 		}
 
+		$cart_total = $this->get_order_total();
+
+		$installments = $this->api->get_installments( $cart_total );
+
 		wc_get_template(
-			'banking-ticket/checkout-instructions.php',
-			array(),
+			'subscription-banking-ticket/payment-form.php',
+			array(
+				'cart_total'           => $cart_total,
+				'max_installment'      => $this->max_installment,
+				'smallest_installment' => $this->api->get_smallest_installment(),
+				'installments'         => $installments,
+			),
 			'woocommerce/pagarme/',
 			WC_Pagarme::get_templates_path()
 		);
@@ -181,7 +270,7 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 			$template = 'no' === $this->async ? 'payment' : 'async';
 
 			wc_get_template(
-				'banking-ticket/' . $template . '-instructions.php',
+				'subscription-banking-ticket/' . $template . '-instructions.php',
 				array(
 					'url' => $data['boleto_url'],
 				),
@@ -211,7 +300,7 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 			$email_type = $plain_text ? 'plain' : 'html';
 
 			wc_get_template(
-				'banking-ticket/emails/' . $email_type . '-instructions.php',
+				'subscription-banking-ticket/emails/' . $email_type . '-instructions.php',
 				array(
 					'url' => $data['boleto_url'],
 				),

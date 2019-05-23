@@ -177,7 +177,7 @@ class WC_Pagarme_API {
 			$this->gateway->log->add( $this->gateway->id, 'Getting the order installments...' );
 		}
 
-		if( 'pagarme-subscription-credit-card' === $this->gateway->id ) {
+		if( 'pagarme-subscription-credit-card' === $this->gateway->id || 'pagarme-subscription-banking-ticket' === $this->gateway->id ) {
 			$pagarme_amount = $amount * 100;
 
 			$installments = [];
@@ -187,7 +187,7 @@ class WC_Pagarme_API {
 					$i => [
 						'installment'=> $i,
 						'amount'=> $pagarme_amount,
-						'installment_amount'=> ceil($pagarme_amount / $i),
+						'installment_amount'=> round($pagarme_amount / $i, 2),
 					]
 				];
 				array_push($installments, $installment[$i]);
@@ -351,7 +351,7 @@ class WC_Pagarme_API {
 			$data['customer']['born_at'] = $birthdate[1] . '-' . $birthdate[0] . '-' . $birthdate[2];
 		}
 
-		if ( 'pagarme-credit-card' === $this->gateway->id || 'pagarme-subscription-credit-card' === $this->gateway->id ) {
+		if ( 'pagarme-credit-card' === $this->gateway->id ) {
 			if ( isset( $posted['pagarme_card_hash'] ) ) {
 				$data['payment_method'] = 'credit_card';
 				$data['card_hash']      = $posted['pagarme_card_hash'];
@@ -373,7 +373,7 @@ class WC_Pagarme_API {
 					}
 				}
 			}
-		} elseif ( 'pagarme-banking-ticket' === $this->gateway->id || 'pagarme-subscription-banking-ticket' === $this->gateway->id ) {
+		} elseif ( 'pagarme-banking-ticket' === $this->gateway->id ) {
 			$data['payment_method'] = 'boleto';
 			$data['async']          = 'yes' === $this->gateway->async;
 		}
@@ -382,7 +382,7 @@ class WC_Pagarme_API {
 		return apply_filters( 'wc_pagarme_transaction_data', $data , $order );
 	}
 
-/**
+	/**
 	 * Generate the plan data.
 	 *
 	 * @param  WC_Order $order  Order data.
@@ -394,17 +394,19 @@ class WC_Pagarme_API {
 		// Set the request data.
 		$data = array(
 			'api_key'      => $this->gateway->api_key,
-			'amount'       => $order->get_total() * 100,
 			'days'         => '30',
 			'name'         => $order->get_order_key(),
-			'charges'      => $posted['pagarme_installments'],
 		);
 
 		if ( 'pagarme-subscription-credit-card' === $this->gateway->id ) {
-			$data['payment_method'] = array('credit_card');			
+			$data['payments_methods'] = array('credit_card');
+			$data['amount']           = round($order->get_total()/$posted['pagarme_installments'], 2)*100;			
+			$data['charges']          = $posted['pagarme_installments'] - 1;
 		} elseif ( 'pagarme-subscription-banking-ticket' === $this->gateway->id ) {
-			$data['payment_method'] = array('boleto');
-			$data['async']          = 'yes' === $this->gateway->async;
+			$data['payments_methods'] = array('boleto');
+			$data['amount']           = round($order->get_total()/$posted['pagarme_ticket_installments'], 2)*100;
+			$data['charges']          = $posted['pagarme_ticket_installments'] - 1;
+			$data['async']            = 'yes' === $this->gateway->async;
 		}
 
 		// Add filter for Third Party plugins.
@@ -517,7 +519,6 @@ class WC_Pagarme_API {
 		// Add filter for Third Party plugins.
 		return apply_filters( 'wc_pagarme_subscription_data', $data , $order );
 	}
-
 
 	/**
 	 * Get customer data from checkout pay page.
@@ -792,7 +793,7 @@ class WC_Pagarme_API {
 	}
 
 	/**
-	 * Do the transaction.
+	 * Cancel transaction.
 	 *
 	 * @param  WC_Order $order Order data.
 	 * @param  string   $token Checkout token.
@@ -872,7 +873,7 @@ class WC_Pagarme_API {
 			'sanitize_text_field',
 			array(
 				'payment_method'  => $data['payment_method'],
-				'installments'    => $data['installments'],
+				'installments'    => ('subscription' === $data['object']) ? $data['plan']['charges'] + 1 : $data['installments'],
 				'card_brand'      => $this->get_card_brand_name( $data['card_brand'] ),
 				'antifraud_score' => $data['antifraud_score'],
 				'boleto_url'      => $data['boleto_url'],
@@ -941,7 +942,7 @@ class WC_Pagarme_API {
 				$transaction = array( 'errors' => array( array( 'message' => __( 'Missing credit card data, please review your data and try again or contact us for assistance.', 'woocommerce-pagarme' ) ) ) );
 			}
 		} else {
-			if ( 'pagarme-subscription-credit-card' === $this->gateway->id ) {
+			if ( 'pagarme-subscription-credit-card' === $this->gateway->id || 'pagarme-subscription-banking-ticket' === $this->gateway->id ) {
 				$data = $this->generate_subscription_data( $order, $_POST );
 				$transaction = $this->do_subscription( $order, $data);
 			} else {
