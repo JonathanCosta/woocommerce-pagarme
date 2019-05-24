@@ -1,6 +1,6 @@
 <?php
 /**
- * Pagar.me Subscription Credit Card gateway
+ * Pagar.me Credit Card Subscription gateway
  *
  * @package WooCommerce_Pagarme/Gateway
  */
@@ -10,20 +10,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * WC_Pagarme_Subscription_Credit_Card_Gateway class.
+ * WC_Pagarme_Credit_Card_Subscription_Gateway class.
  *
  * @extends WC_Payment_Gateway
  */
-class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
+class WC_Pagarme_Credit_Card_Subscription_Gateway extends WC_Payment_Gateway {
 
 	/**
 	 * Constructor for the gateway.
 	 */
 	public function __construct() {
-		$this->id                   = 'pagarme-subscription-credit-card';
-		$this->icon                 = apply_filters( 'wc_pagarme_subscription_credit_card_icon', false );
+		$this->id                   = 'pagarme-credit-card-subscription';
+		$this->icon                 = apply_filters( 'wc_pagarme_credit_card_subscription_icon', false );
 		$this->has_fields           = true;
-		$this->method_title         = __( 'Pagar.me - Subscription Credit Card', 'woocommerce-pagarme' );
+		$this->method_title         = __( 'Pagar.me - Credit Card Subscription', 'woocommerce-pagarme' );
 		$this->method_description   = __( 'Accept subscription payments using Pagar.me with credit card.', 'woocommerce-pagarme' );
 		$this->view_transaction_url = 'https://dashboard.pagar.me/#/transactions/%s';
 
@@ -58,7 +58,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 		add_action( 'wp_enqueue_scripts', array( $this, 'checkout_scripts' ) );
 		add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'thankyou_page' ) );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_instructions' ), 10, 3 );
-		add_action( 'woocommerce_api_wc_pagarme_credit_card_gateway', array( $this, 'ipn_handler' ) );
+		add_action( 'woocommerce_api_wc_pagarme_credit_card_subscription_gateway', array( $this, 'ipn_handler' ) );
 	}
 
 	/**
@@ -85,7 +85,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 			'enabled' => array(
 				'title'   => __( 'Enable/Disable', 'woocommerce-pagarme' ),
 				'type'    => 'checkbox',
-				'label'   => __( 'Enable Pagar.me Subscription Credit Card', 'woocommerce-pagarme' ),
+				'label'   => __( 'Enable Pagar.me Credit Card Subscription', 'woocommerce-pagarme' ),
 				'default' => 'no',
 			),
 			'title' => array(
@@ -93,14 +93,14 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 				'type'        => 'text',
 				'description' => __( 'This controls the title which the user sees during checkout.', 'woocommerce-pagarme' ),
 				'desc_tip'    => true,
-				'default'     => __( 'Subscription Credit Card', 'woocommerce-pagarme' ),
+				'default'     => __( 'Credit Card Subscription', 'woocommerce-pagarme' ),
 			),
 			'description' => array(
 				'title'       => __( 'Description', 'woocommerce-pagarme' ),
 				'type'        => 'textarea',
 				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce-pagarme' ),
 				'desc_tip'    => true,
-				'default'     => __( 'Pay with Subscription Credit Card', 'woocommerce-pagarme' ),
+				'default'     => __( 'Pay with Credit Card Subscription', 'woocommerce-pagarme' ),
 			),
 			'integration' => array(
 				'title'       => __( 'Integration Settings', 'woocommerce-pagarme' ),
@@ -257,10 +257,10 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 			} else {
 				wp_enqueue_script( 'wc-credit-card-form' );
 				wp_enqueue_script( 'pagarme-library', $this->api->get_js_url(), array( 'jquery' ), null );
-				wp_enqueue_script( 'pagarme-subscription-credit-card', plugins_url( 'assets/js/credit-card' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery', 'jquery-blockui', 'pagarme-library' ), WC_Pagarme::VERSION, true );
+				wp_enqueue_script( 'pagarme-credit-card-subscription', plugins_url( 'assets/js/credit-card-subscription' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery', 'jquery-blockui', 'pagarme-library' ), WC_Pagarme::VERSION, true );
 
 				wp_localize_script(
-					'pagarme-subscription-credit-card',
+					'pagarme-credit-card-subscription',
 					'wcPagarmeParams',
 					array(
 						'encryptionKey' => $this->encryption_key,
@@ -284,7 +284,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 			$installments = $this->api->get_installments( $cart_total );
 
 			wc_get_template(
-				'subscription-credit-card/payment-form.php',
+				'credit-card-subscription/payment-form.php',
 				array(
 					'cart_total'           => $cart_total,
 					'max_installment'      => $this->max_installment,
@@ -324,7 +324,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 
 		if ( isset( $data['installments'] ) && in_array( $order->get_status(), array( 'processing', 'on-hold' ), true ) ) {
 			wc_get_template(
-				'subscription-credit-card/payment-instructions.php',
+				'credit-card-subscription/payment-instructions.php',
 				array(
 					'card_brand'   => $data['card_brand'],
 					'installments' => $data['installments'],
@@ -355,7 +355,7 @@ class WC_Pagarme_Subscription_Credit_Card_Gateway extends WC_Payment_Gateway {
 			$email_type = $plain_text ? 'plain' : 'html';
 
 			wc_get_template(
-				'subscription-credit-card/emails/' . $email_type . '-instructions.php',
+				'credit-card-subscription/emails/' . $email_type . '-instructions.php',
 				array(
 					'card_brand'   => $data['card_brand'],
 					'installments' => $data['installments'],
