@@ -1,6 +1,6 @@
 <?php
 /**
- * Subscription Banking Ticket - Checkout form.
+ * Banking Ticket Subscription - Checkout form.
  *
  * @author  Pagar.me
  * @package WooCommerce_Pagarme/Templates
@@ -12,8 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
-<fieldset id="pagarme-subscription-banking-ticket-form">
-	<?php if ( apply_filters( 'wc_pagarme_allow_subscription_banking_ticket_installments', 1 < $max_installment ) ) : ?>
+<fieldset id="pagarme-banking-ticket-subscription-form">
+	<?php if ( apply_filters( 'wc_pagarme_allow_banking_ticket_subscription_installments', 1 < $max_installment ) ) : ?>
 		<p class="form-row form-row-wide">
 			<label for="pagarme-ticket-installments"><?php esc_html_e( 'Installments', 'woocommerce-pagarme' ); ?> <span class="required">*</span></label>
 			<select name="pagarme_ticket_installments" id="pagarme-ticket-installments" style="font-size: 1.5em; padding: 8px; width: 100%;">

@@ -1,6 +1,6 @@
 <?php
 /**
- * Subscription Banking Ticket - Payment instructions.
+ * Banking Ticket Subscription - Payment instructions.
  *
  * @author  Pagar.me
  * @package WooCommerce_Pagarme/Templates

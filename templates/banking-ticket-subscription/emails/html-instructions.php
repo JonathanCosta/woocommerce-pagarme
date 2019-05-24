@@ -1,6 +1,6 @@
 <?php
 /**
- * Subcription Banking Ticket - HTML email instructions.
+ * Banking Ticket Subcription - HTML email instructions.
  *
  * @author  Pagar.me
  * @package WooCommerce_Pagarme/Templates

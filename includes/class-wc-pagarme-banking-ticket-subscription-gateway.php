@@ -1,6 +1,6 @@
 <?php
 /**
- * Pagar.me Subscription Banking Ticket gateway
+ * Pagar.me Banking Ticket Subscription gateway
  *
  * @package WooCommerce_Pagarme/Gateway
  */
@@ -10,20 +10,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * WC_Pagarme_Subscription_Banking_Ticket_Gateway class.
+ * WC_Pagarme_Banking_Ticket_Subscription_Gateway class.
  *
  * @extends WC_Payment_Gateway
  */
-class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway {
+class WC_Pagarme_Banking_Ticket_Subscription_Gateway extends WC_Payment_Gateway {
 
 	/**
 	 * Constructor for the gateway.
 	 */
 	public function __construct() {
-		$this->id                   = 'pagarme-subscription-banking-ticket';
-		$this->icon                 = apply_filters( 'wc_pagarme_subscription_banking_ticket_icon', false );
+		$this->id                   = 'pagarme-banking-ticket-subscription';
+		$this->icon                 = apply_filters( 'wc_pagarme_banking_ticket_subscription__icon', false );
 		$this->has_fields           = true;
-		$this->method_title         = __( 'Pagar.me - Subscription Banking Ticket', 'woocommerce-pagarme' );
+		$this->method_title         = __( 'Pagar.me - Banking Ticket Subscription', 'woocommerce-pagarme' );
 		$this->method_description   = __( 'Accept subscription payments using Pagar.me. with banking ticket', 'woocommerce-pagarme' );
 		$this->view_transaction_url = 'https://dashboard.pagar.me/#/transactions/%s';
 
@@ -57,7 +57,7 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'thankyou_page' ) );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_instructions' ), 10, 3 );
-		add_action( 'woocommerce_api_wc_pagarme_banking_ticket_gateway', array( $this, 'ipn_handler' ) );
+		add_action( 'woocommerce_api_wc_pagarme_banking_ticket_subscription_gateway', array( $this, 'ipn_handler' ) );
 	}
 
 	/**
@@ -84,7 +84,7 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 			'enabled' => array(
 				'title'   => __( 'Enable/Disable', 'woocommerce-pagarme' ),
 				'type'    => 'checkbox',
-				'label'   => __( 'Enable Pagar.me Subscription Banking Ticket', 'woocommerce-pagarme' ),
+				'label'   => __( 'Enable Pagar.me Banking Ticket Subscription', 'woocommerce-pagarme' ),
 				'default' => 'no',
 			),
 			'title' => array(
@@ -92,14 +92,14 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 				'type'        => 'text',
 				'description' => __( 'This controls the title which the user sees during checkout.', 'woocommerce-pagarme' ),
 				'desc_tip'    => true,
-				'default'     => __( 'Subscription Banking Ticket', 'woocommerce-pagarme' ),
+				'default'     => __( 'Banking Ticket Subscription', 'woocommerce-pagarme' ),
 			),
 			'description' => array(
 				'title'       => __( 'Description', 'woocommerce-pagarme' ),
 				'type'        => 'textarea',
 				'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce-pagarme' ),
 				'desc_tip'    => true,
-				'default'     => __( 'Pay with Subscription Banking Ticket', 'woocommerce-pagarme' ),
+				'default'     => __( 'Pay with Banking Ticket Subscription', 'woocommerce-pagarme' ),
 			),
 			'integration' => array(
 				'title'       => __( 'Integration Settings', 'woocommerce-pagarme' ),
@@ -234,7 +234,7 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 		$installments = $this->api->get_installments( $cart_total );
 
 		wc_get_template(
-			'subscription-banking-ticket/payment-form.php',
+			'banking-ticket-subscription/payment-form.php',
 			array(
 				'cart_total'           => $cart_total,
 				'max_installment'      => $this->max_installment,
@@ -270,7 +270,7 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 			$template = 'no' === $this->async ? 'payment' : 'async';
 
 			wc_get_template(
-				'subscription-banking-ticket/' . $template . '-instructions.php',
+				'banking-ticket-subscription/' . $template . '-instructions.php',
 				array(
 					'url' => $data['boleto_url'],
 				),
@@ -300,7 +300,7 @@ class WC_Pagarme_Subscription_Banking_Ticket_Gateway extends WC_Payment_Gateway 
 			$email_type = $plain_text ? 'plain' : 'html';
 
 			wc_get_template(
-				'subscription-banking-ticket/emails/' . $email_type . '-instructions.php',
+				'banking-ticket-subscription/emails/' . $email_type . '-instructions.php',
 				array(
 					'url' => $data['boleto_url'],
 				),
