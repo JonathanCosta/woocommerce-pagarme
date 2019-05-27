@@ -405,7 +405,7 @@ class WC_Pagarme_API {
 		} elseif ( 'pagarme-banking-ticket-subscription' === $this->gateway->id ) {
 			$data['payments_methods'] = array('boleto');
 			$data['amount']           = round($order->get_total()/$posted['pagarme_ticket_installments'], 2)*100;
-			$data['charges']          = $posted['pagarme_ticket_installments'] - 1;
+			$data['charges']          = $posted['pagarme_ticket_installments'];
 			$data['async']            = 'yes' === $this->gateway->async;
 		}
 
