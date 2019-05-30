@@ -358,8 +358,8 @@ class WC_Pagarme_API {
 			}
 
 			// Validate the installments.
-			if ( apply_filters( 'wc_pagarme_allow_credit_card_installments_validation', isset( $posted['pagarme_installments'] ), $order ) ) {
-				$_installment = $posted['pagarme_installments'];
+			if ( apply_filters( 'wc_pagarme_allow_credit_card_installments_validation', isset( $posted['pagarme-credit-card-installments'] ), $order ) ) {
+				$_installment = $posted['pagarme-credit-card-installments'];
 
 				$data['installments'] = $_installment;
 				// Get installments data.
@@ -400,8 +400,8 @@ class WC_Pagarme_API {
 
 		if ( 'pagarme-credit-card-subscription' === $this->gateway->id ) {
 			$data['payments_methods'] = array('credit_card');
-			$data['amount']           = round($order->get_total()/$posted['pagarme_subscription_installments'], 2)*100;			
-			$data['charges']          = $posted['pagarme_subscription_installments'] - 1;
+			$data['amount']           = round($order->get_total()/$posted['pagarme-credit-card-subscription-installments'], 2)*100;			
+			$data['charges']          = $posted['pagarme-credit-card-subscription-installments'] - 1;
 		} elseif ( 'pagarme-banking-ticket-subscription' === $this->gateway->id ) {
 			$data['payments_methods'] = array('boleto');
 			$data['amount']           = round($order->get_total()/$posted['pagarme_ticket_installments'], 2)*100;
@@ -496,8 +496,8 @@ class WC_Pagarme_API {
 			}
 
 			// Validate the installments.
-			if ( apply_filters( 'wc_pagarme_allow_credit_card_installments_validation', isset( $posted['pagarme_subscription_installments'] ), $order ) ) {
-				$_installment = $posted['pagarme_subscription_installments'];
+			if ( apply_filters( 'wc_pagarme_allow_credit_card_installments_validation', isset( $posted['pagarme-credit-card-subscription-installments'] ), $order ) ) {
+				$_installment = $posted['pagarme-credit-card-subscription-installments'];
 
 				$data['installments'] = $_installment;
 				// Get installments data.

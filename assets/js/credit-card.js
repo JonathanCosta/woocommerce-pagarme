@@ -15,8 +15,10 @@
 			PagarMe.encryption_key = wcPagarmeParams.encryptionKey;
 
 			var form           = $( 'form.checkout, form#order_review' ),
+				submitButton   = $( '#place_order' ),
 				creditCard     = new PagarMe.creditCard(),
 				creditCardForm = $( '#pagarme-credit-cart-form', form ),
+				installments   = null,
 				errors         = null,
 				errorHtml      = '';
 
@@ -30,11 +32,14 @@
 			creditCard.cardNumber          = $( '#pagarme-card-number', form ).val().replace( /[^\d]/g, '' );
 			creditCard.cardCVV             = $( '#pagarme-card-cvc', form ).val();
 
+			// Check installments
+			installments = $( '#pagarme-credit-card-installments', form ).val();
+
 			// Get the errors.
 			errors = creditCard.fieldErrors();
 
 			// Display the errors in credit card form.
-			if ( ! $.isEmptyObject( errors ) ) {
+			if ( ! $.isEmptyObject( errors ) || installments === "0" ) {
 				form.removeClass( 'processing' );
 				$( '.woocommerce-error', creditCardForm ).remove();
 
@@ -42,6 +47,9 @@
 				$.each( errors, function ( key, value ) {
 					errorHtml += '<li>' + value + '</li>';
 				});
+
+				if( installments === "0" )
+					errorHtml += '<li>' + 'Número de Parcelas Inválido' + '</li>';
 				errorHtml += '</ul>';
 
 				creditCardForm.prepend( '<div class="woocommerce-error">' + errorHtml + '</div>' );
@@ -56,6 +64,14 @@
 
 					// Add the hash input.
 					form.append( $( '<input name="pagarme_card_hash" type="hidden" />' ).val( cardHash ) );
+
+					submitButton.attr( 'disabled','disabled' );
+
+					setTimeout(function(){
+						if( $( '.checkout.woocommerce-checkout.processing' ).length === 0 ) {
+							submitButton.removeAttr( 'disabled' );
+						}
+					}, 5000);
 
 					// Submit the form.
 					form.submit();

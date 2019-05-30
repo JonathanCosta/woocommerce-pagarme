@@ -51,6 +51,7 @@ class WC_Pagarme_Banking_Ticket_Gateway extends WC_Payment_Gateway {
 
 		// Actions.
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'checkout_scripts' ) );
 		add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'thankyou_page' ) );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_instructions' ), 10, 3 );
 		add_action( 'woocommerce_api_wc_pagarme_banking_ticket_gateway', array( $this, 'ipn_handler' ) );
@@ -139,6 +140,27 @@ class WC_Pagarme_Banking_Ticket_Gateway extends WC_Payment_Gateway {
 				'description' => sprintf( __( 'Log Pagar.me events, such as API requests. You can check the log in %s', 'woocommerce-pagarme' ), '<a href="' . esc_url( admin_url( 'admin.php?page=wc-status&tab=logs&log_file=' . esc_attr( $this->id ) . '-' . sanitize_file_name( wp_hash( $this->id ) ) . '.log' ) ) . '">' . __( 'System Status &gt; Logs', 'woocommerce-pagarme' ) . '</a>' ),
 			),
 		);
+	}
+
+	/**
+	 * Checkout scripts.
+	 */
+	public function checkout_scripts() {
+		if ( is_checkout() ) {
+			$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+
+			wp_enqueue_script( 'wc-banking-ticket-form' );
+			wp_enqueue_script( 'pagarme-library', $this->api->get_js_url(), array( 'jquery' ), null );
+			wp_enqueue_script( 'pagarme-banking-ticket', plugins_url( 'assets/js/banking-ticket' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery', 'jquery-blockui', 'pagarme-library' ), WC_Pagarme::VERSION, true );
+
+			wp_localize_script(
+				'pagarme-banking-ticket',
+				'wcPagarmeParams',
+				array(
+					'encryptionKey' => $this->encryption_key,
+				)
+			);
+		}
 	}
 
 	/**

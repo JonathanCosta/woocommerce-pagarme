@@ -34,7 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php if ( apply_filters( 'wc_pagarme_allow_credit_card_installments', 1 < $max_installment ) ) : ?>
 		<p class="form-row form-row-wide">
 			<label for="pagarme-card-subscription-installments"><?php esc_html_e( 'Installments', 'woocommerce-pagarme' ); ?> <span class="required">*</span></label>
-			<select name="pagarme_subscription_installments" id="pagarme-installments" style="font-size: 1.5em; padding: 8px; width: 100%;">
+			<select name="pagarme-credit-card-subscription-installments" id="pagarme-credit-card-subscription-installments" style="font-size: 1.5em; padding: 8px; width: 100%;">
 				<option value="0"><?php printf( esc_html__( 'Please, select the number of installments', 'woocommerce-pagarme' ) ); ?></option>
 				<?php
 				foreach ( $installments as $number => $installment ) :
