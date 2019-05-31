@@ -5,10 +5,10 @@
 	$( function() {
 
 		/**
-		 * Process the credit card data when submit the checkout form.
+		 * Process the credit card subscription data when submit the checkout form.
 		 */
 		$( 'body' ).on( 'click', '#place_order', function() {
-			if ( ! $( '#payment_method_pagarme-credit-card' ).is( ':checked' ) ) {
+			if ( ! $( '#payment_method_pagarme-credit-card-subscription' ).is( ':checked' ) ) {
 				return true;
 			}
 
@@ -17,7 +17,7 @@
 			var form           = $( 'form.checkout, form#order_review' ),
 				submitButton   = $( '#place_order' ),
 				creditCard     = new PagarMe.creditCard(),
-				creditCardForm = $( '#pagarme-credit-cart-form', form ),
+				creditCardForm = $( '#pagarme-credit-cart-subscription-form', form ),
 				installments   = null,
 				errors         = null,
 				errorHtml      = '';
@@ -26,14 +26,14 @@
 			form.addClass( 'processing' );
 
 			// Set the Credit card data.
-			creditCard.cardHolderName      = $( '#pagarme-card-holder-name', form ).val();
-			creditCard.cardExpirationMonth = $( '#pagarme-card-expiry', form ).val().replace( /[^\d]/g, '' ).substr( 0, 2 );
-			creditCard.cardExpirationYear  = $( '#pagarme-card-expiry', form ).val().replace( /[^\d]/g, '' ).substr( 2 );
-			creditCard.cardNumber          = $( '#pagarme-card-number', form ).val().replace( /[^\d]/g, '' );
-			creditCard.cardCVV             = $( '#pagarme-card-cvc', form ).val();
+			creditCard.cardHolderName      = $( '#pagarme-card-subscription-holder-name', form ).val();
+			creditCard.cardExpirationMonth = $( '#pagarme-card-subscription-expiry', form ).val().replace( /[^\d]/g, '' ).substr( 0, 2 );
+			creditCard.cardExpirationYear  = $( '#pagarme-card-subscription-expiry', form ).val().replace( /[^\d]/g, '' ).substr( 2 );
+			creditCard.cardNumber          = $( '#pagarme-card-subscription-number', form ).val().replace( /[^\d]/g, '' );
+			creditCard.cardCVV             = $( '#pagarme-card-subscription-cvc', form ).val();
 
 			// Check installments
-			installments = $( '#pagarme-credit-card-installments', form ).val();
+			installments = $( '#pagarme-credit-card-subscription-installments', form ).val();
 
 			// Get the errors.
 			errors = creditCard.fieldErrors();

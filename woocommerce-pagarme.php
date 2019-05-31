@@ -79,6 +79,8 @@ if ( ! class_exists( 'WC_Pagarme' ) ) :
 			include_once dirname( __FILE__ ) . '/includes/class-wc-pagarme-my-account.php';
 			include_once dirname( __FILE__ ) . '/includes/class-wc-pagarme-banking-ticket-gateway.php';
 			include_once dirname( __FILE__ ) . '/includes/class-wc-pagarme-credit-card-gateway.php';
+			include_once dirname( __FILE__ ) . '/includes/class-wc-pagarme-banking-ticket-subscription-gateway.php';
+			include_once dirname( __FILE__ ) . '/includes/class-wc-pagarme-credit-card-subscription-gateway.php';
 		}
 
 		/**
@@ -107,6 +109,8 @@ if ( ! class_exists( 'WC_Pagarme' ) ) :
 		public function add_gateway( $methods ) {
 			$methods[] = 'WC_Pagarme_Banking_Ticket_Gateway';
 			$methods[] = 'WC_Pagarme_Credit_Card_Gateway';
+			$methods[] = 'WC_Pagarme_Banking_Ticket_Subscription_Gateway';
+			$methods[] = 'WC_Pagarme_Credit_Card_Subscription_Gateway';
 
 			return $methods;
 		}
@@ -123,10 +127,13 @@ if ( ! class_exists( 'WC_Pagarme' ) ) :
 
 			$banking_ticket = 'wc_pagarme_banking_ticket_gateway';
 			$credit_card    = 'wc_pagarme_credit_card_gateway';
+			$banking_ticket_subscription  = 'wc_pagarme_banking_ticket_subscription_gateway';
+			$credit_card_subscription  =    'wc_pagarme_credit_card_subscription_gateway';
 
 			$plugin_links[] = '<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout&section=' . $banking_ticket ) ) . '">' . __( 'Bank Slip Settings', 'woocommerce-pagarme' ) . '</a>';
-
 			$plugin_links[] = '<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout&section=' . $credit_card ) ) . '">' . __( 'Credit Card Settings', 'woocommerce-pagarme' ) . '</a>';
+			$plugin_links[] = '<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout&section=' . $banking_ticket_subscription ) ) . '">' . __( 'Banking Ticket Subscription Settings', 'woocommerce-pagarme' ) . '</a>';
+			$plugin_links[] = '<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout&section=' . $credit_card_subscription ) ) . '">' . __( 'Credit Card Subscription Settings', 'woocommerce-pagarme' ) . '</a>';
 
 			return array_merge( $plugin_links, $links );
 		}
@@ -171,8 +178,35 @@ if ( ! class_exists( 'WC_Pagarme' ) ) :
 						'debug'                => $old_options['debug'],
 					);
 
+					// Subscription banking ticket options.
+					$banking_ticket_subscription = array(
+						'enabled'        => $old_options['enabled'],
+						'title'          => 'Assinatura boleto bancário',
+						'description'    => '',
+						'api_key'        => $old_options['api_key'],
+						'encryption_key' => $old_options['encryption_key'],
+						'debug'          => $old_options['debug'],
+					);
+
+					// Subscription credit card options.
+					$credit_card_subscription = array(
+						'enabled'              => $old_options['enabled'],
+						'title'                => 'Assinatura cartão de crédito',
+						'description'          => '',
+						'api_key'              => $old_options['api_key'],
+						'encryption_key' 	   => $old_options['encryption_key'],
+						'checkout'             => 'no',
+						'max_installment'      => $old_options['max_installment'],
+						'smallest_installment' => $old_options['smallest_installment'],
+						'interest_rate'        => $old_options['interest_rate'],
+						'free_installments'    => $old_options['free_installments'],
+						'debug'                => $old_options['debug'],
+					);
+
 					update_option( 'woocommerce_pagarme-banking-ticket_settings', $banking_ticket );
 					update_option( 'woocommerce_pagarme-credit-card_settings', $credit_card );
+					update_option( 'woocommerce_pagarme-banking-ticket-subscription_settings', $banking_ticket_subscription );
+					update_option( 'woocommerce_pagarme-credit-card-subscription_settings', $credit_card_subscription );
 
 					delete_option( 'woocommerce_pagarme_settings' );
 				}
